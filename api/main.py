@@ -2,8 +2,23 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 import math
 import statistics
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles # New: For serving the test page
+from pydantic import BaseModel
+import math
+import statistics
+import os
+
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # 1. DATA CONTRACT: Matches what the JS Collector sends
 class BehaviorData(BaseModel):
@@ -63,3 +78,7 @@ async def verify_user(data: BehaviorData):
     else:
         # ACTION: Trigger MFA (OTP) because the rhythm changed
         return {"status": "SUSPICIOUS", "score": round(score, 2)}
+
+# Tells FastAPI to serve files from your main folder
+# This makes it 'Plug and Play' for anyone who clones your repo
+app.mount("/", StaticFiles(directory=".", html=True), name="static")
