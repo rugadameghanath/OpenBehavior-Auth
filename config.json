@@ -1,4 +1,5 @@
 {
+    "storage_mode": "local_csv", 
     "threshold": 75.0,
     "starting_session_count": 0,
     "baseline": {
