@@ -54,12 +54,29 @@ def is_human(timings: list):
     return variance > 2.0 
 
 def calculate_similarity(baseline, current):
-    """Euclidean Distance between profile and current session."""
-    distance = math.sqrt(
-        (baseline['avg_dwell'] - current.avg_dwell)**2 + 
-        (baseline['avg_flight'] - current.avg_flight)**2
-    )
-    return distance
+    """
+    Calculates a percentage match across 7 biometric factors.
+    100% = Perfect Match, 0% = Total Mismatch
+    """
+    metrics = [
+        'dwellTime', 'flightTime', 'rhythmVariance', 
+        'deleteRatio', 'mouseJitter', 'mouseVelocity', 'clickDuration'
+    ]
+    
+    total_score = 0
+    
+    for k in metrics:
+        # Get values, ensuring we don't divide by zero
+        bv = baseline.get(k, 0)
+        # We use getattr because 'current' is a Pydantic object
+        cv = getattr(current, k, 0)
+        
+        mx = max(bv, cv, 1)
+        # Calculate how close the two numbers are (0.0 to 1.0)
+        total_score += (1 - abs(bv - cv) / mx)
+    
+    # Return as a percentage (0-100)
+    return (total_score / len(metrics)) * 100
 
 # ==========================================
 # 3. THE CORE SECURITY GATEKEEPER
