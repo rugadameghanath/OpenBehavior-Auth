@@ -14,7 +14,9 @@ CREATE TABLE BehaviorLogs (
     log_id UNIQUEIDENTIFIER PRIMARY KEY,
     profile_id INT,
     captured_score FLOAT,           -- How well did they match today?
-    is_anomaly BIT DEFAULT 0,       -- 1 if it looked like a hacker/bot
+    is_anomaly BIT DEFAULT 0,       -- 1 if behavior was a mismatch
+    is_bot BIT DEFAULT 0,           -- 1 if variance was too low (perfect timing)
+    raw_jitter FLOAT,               -- Store the variance score for debugging
     created_at DATETIME DEFAULT GETDATE()
 );
 
