@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>OpenBehavior-Auth Tester</title>
+    <style>
+        body { font-family: sans-serif; padding: 50px; line-height: 1.6; }
+        .container { max-width: 500px; margin: auto; background: #f4f4f4; padding: 20px; border-radius: 8px; }
+        input { width: 90%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; }
+        #result { padding: 15px; margin-top: 20px; border-radius: 4px; font-weight: bold; background: #fff; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Behavioral Auth Tester</h2>
+        <p>Type at least 10 characters to trigger a check.</p>
+        <input type="text" id="typeBox" placeholder="Start typing here...">
+        <div id="result">Waiting for input...</div>
+    </div>
+
+    <script>
+        let timings = [];
+        let lastKeyTime = performance.now();
+
+        const input = document.getElementById('typeBox');
+        const display = document.getElementById('result');
+
+        input.addEventListener('keydown', (e) => {
+            const now = performance.now();
+            const flightTime = now - lastKeyTime;
+            
+            // Capture flight time (time between keys)
+            if (timings.length < 15) {
+                timings.push(Math.round(flightTime));
+            }
+            lastKeyTime = now;
+
+            // Once we have 10 samples, send to the Python API
+            if (timings.length === 10) {
+                const avgFlight = timings.reduce((a, b) => a + b) / timings.length;
+                
+                display.innerText = "Sending to Python API...";
+
+                fetch('http://127.0.0.1:8000/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: "meghanath_local_test",
+                        device_type: "desktop",
+                        avg_dwell: 85.0, // Mocked baseline
+                        avg_flight: avgFlight,
+                        raw_timings: timings
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    display.style.color = data.status === "REJECTED" ? "red" : "green";
+                    display.innerText = `Status: ${data.status} | Progress: ${data.progress || 'N/A'}`;
+                    // Clear timings for next batch
+                    timings = [];
+                })
+                .catch(err => {
+                    display.innerText = "Error: Check if Uvicorn is running!";
+                    display.style.color = "red";
+                    console.error(err);
+                });
+            }
+        });
+    </script>
+</body>
+</html>
