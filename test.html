@@ -1,69 +1,72 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <title>OpenBehavior-Auth Tester</title>
+    <title>Biometric Auth Lab</title>
     <style>
-        body { font-family: sans-serif; padding: 50px; line-height: 1.6; }
-        .container { max-width: 500px; margin: auto; background: #f4f4f4; padding: 20px; border-radius: 8px; }
-        input { width: 90%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; }
-        #result { padding: 15px; margin-top: 20px; border-radius: 4px; font-weight: bold; background: #fff; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .container { background: #1e293b; padding: 2rem; borderRadius: 12px; boxShadow: 0 10px 15px -3px rgba(0,0,0,0.1); width: 400px; text-align: center; border: 1px solid #334155; }
+        textarea { width: 100%; height: 100px; padding: 10px; border-radius: 8px; border: 1px solid #475569; background: #0f172a; color: white; font-family: monospace; resize: none; box-sizing: border-box; }
+        .status-box { margin-top: 20px; padding: 10px; border-radius: 8px; background: #334155; font-size: 0.9rem; }
+        .highlight { color: #38bdf8; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>Behavioral Auth Tester</h2>
-        <p>Type at least 10 characters to trigger a check.</p>
-        <input type="text" id="typeBox" placeholder="Start typing here...">
-        <div id="result">Waiting for input...</div>
+        <h2>Identity Lab</h2>
+        <p style="font-size: 0.8rem; color: #94a3b8;">Type naturally to build your profile.</p>
+        <textarea id="inputBox" placeholder="Start typing here..."></textarea>
+        
+        <div class="status-box">
+            Status: <span id="status" class="highlight">Waiting for input...</span><br>
+            Progress: <span id="progress" class="highlight">N/A</span>
+        </div>
     </div>
 
     <script>
-    let metrics = { dwells: [], flights: [], lastUp: null, lastDown: null };
+        let metrics = { dwells: [], flights: [], lastUp: null, lastDown: null };
 
-    // Capture the typing rhythm
-    document.getElementById('inputBox').addEventListener('keydown', (e) => {
-        metrics.lastDown = performance.now();
-    });
+        document.getElementById('inputBox').addEventListener('keydown', (e) => {
+            metrics.lastDown = performance.now();
+        });
 
-    document.getElementById('inputBox').addEventListener('keyup', (e) => {
-        const now = performance.now();
-        if (metrics.lastDown) metrics.dwells.push(now - metrics.lastDown);
-        if (metrics.lastUp) metrics.flights.push(metrics.lastDown - metrics.lastUp);
-        metrics.lastUp = now;
+        document.getElementById('inputBox').addEventListener('keyup', (e) => {
+            const now = performance.now();
+            if (metrics.lastDown) metrics.dwells.push(now - metrics.lastDown);
+            if (metrics.lastUp) metrics.flights.push(metrics.lastDown - metrics.lastUp);
+            metrics.lastUp = now;
 
-        // Every 10 characters, send the data to your Python API
-        if (metrics.dwells.length % 10 === 0) {
-            const avg = arr => arr.length ? arr.reduce((a, b) => a + b) / arr.length : 0;
+            // Send data every 10 keystrokes
+            if (metrics.dwells.length > 0 && metrics.dwells.length % 10 === 0) {
+                const avg = arr => arr.length ? arr.reduce((a, b) => a + b) / arr.length : 0;
+                
+                const payload = {
+                    user_id: "user_101",
+                    dwellTime: avg(metrics.dwells),
+                    flightTime: avg(metrics.flights),
+                    rhythmVariance: 15.0, // Static for now
+                    deleteRatio: 0.0, 
+                    mouseJitter: 0.0,
+                    mouseVelocity: 0.0,
+                    clickDuration: 0.0,
+                    raw_timings: metrics.dwells
+                };
 
-
-            const payload = {
-    user_id: "user_101",
-    dwellTime: avg(metrics.dwells) || 0,
-    flightTime: avg(metrics.flights) || 0,
-    rhythmVariance: 15.0, // Placeholder for now
-    deleteRatio: 0, 
-    mouseJitter: 0,
-    mouseVelocity: 0,
-    clickDuration: 0,
-    raw_timings: metrics.dwells || []
-};
-            
-
-            fetch('http://127.0.0.1:8000/verify', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            })
-            .then(res => res.json())
-            .then(data => {
-                // This updates the labels on your screen
-                document.getElementById('status').innerText = data.status;
-                document.getElementById('progress').innerText = data.progress || "Verified";
-                console.log("Response from API:", data);
-            })
-            .catch(err => console.error("API Error:", err));
-        }
-    });
-</script>
+                fetch('/verify', { // Note: using relative path since we are on the same server
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                })
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('status').innerText = data.status;
+                    document.getElementById('progress').innerText = data.progress || "Verified";
+                })
+                .catch(err => {
+                    document.getElementById('status').innerText = "Connection Error";
+                    console.error(err);
+                });
+            }
+        });
+    </script>
 </body>
 </html>
