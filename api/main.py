@@ -65,20 +65,20 @@ def calculate_similarity(baseline, current):
 
 
 async def verify_user(data: BehaviorData):
-    global db_user  # This tells Python to update the variable we created above
+        global db_user  # This tells Python to update the variable we created above
     # --- MOCK SQL DATA: In production, fetch this from Oracle ---
     # SELECT profile_id, avg_dwell, avg_flight, session_count FROM UserProfiles
-'''
-db_user = {
+    '''
+    db_user = {
         "profile_id": 101,
         "avg_dwell": 85.0, 
         "avg_flight": 120.0, 
         "session_count": 3  # Change this to 6 to test the verification phase
     }
-'''
+    '''
 
     # STEP A: Bot Check (Always do this first)
-    if not is_human(data.raw_timings):
+if not is_human(data.raw_timings):
         return {"status": "REJECTED", "reason": "Automated traffic detected"}
     
     # STEP B: Enrollment Phase (The "Learning" sessions)
@@ -91,7 +91,7 @@ db_user = {
             "message": "Building behavioral profile. No verification yet."
         }
 '''
-    if db_user["session_count"] < 5:
+        if db_user["session_count"] < 5:
         db_user["session_count"] += 1  # <--- THIS SAVES THE PROGRESS
         return {
             "status": "ENROLLING", 
