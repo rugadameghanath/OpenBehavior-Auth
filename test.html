@@ -34,19 +34,20 @@
         // Every 10 characters, send the data to your Python API
         if (metrics.dwells.length % 10 === 0) {
             const avg = arr => arr.length ? arr.reduce((a, b) => a + b) / arr.length : 0;
-            
+
+
             const payload = {
-                user_id: "user_101",
-                // These 7 keys MUST match your Python BehaviorData class exactly
-                dwellTime: avg(metrics.dwells),
-                flightTime: avg(metrics.flights),
-                rhythmVariance: 15.0, // Placeholder
-                deleteRatio: 0, 
-                mouseJitter: 0,
-                mouseVelocity: 0,
-                clickDuration: 0,
-                raw_timings: metrics.dwells // Used for the Bot Check
-            };
+    user_id: "user_101",
+    dwellTime: avg(metrics.dwells) || 0,
+    flightTime: avg(metrics.flights) || 0,
+    rhythmVariance: 15.0, // Placeholder for now
+    deleteRatio: 0, 
+    mouseJitter: 0,
+    mouseVelocity: 0,
+    clickDuration: 0,
+    raw_timings: metrics.dwells || []
+};
+            
 
             fetch('http://127.0.0.1:8000/verify', {
                 method: 'POST',
