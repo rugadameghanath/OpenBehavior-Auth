@@ -1,0 +1,9 @@
+{
+    "simulation_mode": true,
+    "starting_session_count": 0,
+    "threshold": 20.0,
+    "baseline": {
+        "avg_dwell": 85.0,
+        "avg_flight": 120.0
+    }
+}
