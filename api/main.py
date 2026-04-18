@@ -38,10 +38,14 @@ db_user = {
 # ==========================================
 class BehaviorData(BaseModel):
     user_id: str
-    device_type: str
-    avg_dwell: float
-    avg_flight: float
-    raw_timings: list
+    dwellTime: float
+    flightTime: float
+    rhythmVariance: float
+    deleteRatio: float
+    mouseJitter: float
+    mouseVelocity: float
+    clickDuration: float
+    raw_timings: list  # Still needed for the Bot Check
 
 def is_human(timings: list):
     """Bot Check: High variance = Human, Low variance = Bot."""
