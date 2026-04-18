@@ -49,23 +49,40 @@ def update_baseline(old_avg, new_value, session_count):
 
 @app.post("/verify")
 async def verify_user(data: BehaviorData):
-    # MOCK SQL STEP: In a real app, you'd do: 
-    # SELECT * FROM UserProfiles WHERE user_hash = data.user_id
-    mock_baseline = {"avg_dwell": 85.0, "avg_flight": 120.0} 
+    # 1. MOCK SQL STEP: In Oracle, you'd fetch the row for this user_id
+    # We added 'session_count' to our mock data
+    mock_user_profile = {
+        "avg_dwell": 85.0, 
+        "avg_flight": 120.0, 
+        "session_count": 3  # Current number of successful logins stored in Oracle
+    }
 
-    # Bot Check first!
+    # 2. Bot Check first! (Always kill automation before processing logic)
     if not is_human(data.raw_timings):
         return {"status": "REJECTED", "reason": "Automated traffic detected"}
     
-    # Run the match
-    score = calculate_similarity(mock_baseline, data)
+    # 3. ENROLLMENT LOGIC (The "Step 2" we discussed)
+    # If the user is new (less than 5 sessions), we don't verify score yet.
+    if mock_user_profile["session_count"] < 5:
+        # Here, you would UPDATE Oracle: 
+        # SET avg_dwell = new_calc, avg_flight = new_calc, session_count = count + 1
+        return {
+            "status": "ENROLLING", 
+            "progress": f"{mock_user_profile['session_count'] + 1}/5",
+            "message": "Building behavioral profile. No verification performed."
+        }
+    
+    # 4. VERIFICATION LOGIC (Only runs if session_count >= 5)
+    score = calculate_similarity(mock_user_profile, data)
     
     # Threshold check (Lower is better)
     THRESHOLD = 20.0 
     
     if score <= THRESHOLD:
+        # Match! Here you'd also run your 'update_baseline' logic to follow the drift
         return {"status": "CERTIFIED", "score": round(score, 2)}
     else:
+        # Mismatch or major drift
         return {"status": "SUSPICIOUS", "score": round(score, 2)}
 
 # 3. To run this: 'pip install fastapi uvicorn' then 'uvicorn main:app --reload'
