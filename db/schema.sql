@@ -16,6 +16,7 @@ CREATE TABLE BehaviorLogs (
     prev_log_id RAW(16),                                            -- Links to the previous session (The Trail)
     captured_score NUMBER(10,4),                                    -- The Euclidean distance calculated today
     is_anomaly NUMBER(1) DEFAULT 0,                                 -- 1 if behavior was a human mismatch
+    is_test_mode NUMBER(1) DEFAULT 1                                -- 1 if the mode is testing
     is_bot NUMBER(1) DEFAULT 0,                                     -- 1 if variance was too low (Bot detected)
     raw_jitter NUMBER(10,4),                                        -- Standard deviation of timings
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP                  -- Exact time of login attempt
