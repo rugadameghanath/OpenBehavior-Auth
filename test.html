@@ -3,10 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Behavioral Biometrics Lab | OpenBehavior-Auth</title>
-    <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.development.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.development.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/babel-standalone@6.26.0/babel.min.js"></script>
+    <title>Behavioral Biometrics Lab | Vanilla JS</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #f8fafc; font-family: system-ui, -apple-system, sans-serif; padding: 1.5rem; min-height: 100vh; }
@@ -33,295 +30,291 @@
     </style>
 </head>
 <body>
-<div id="root"></div>
 
-<script type="text/babel">
-function calcVariance(arr) {
-    if (arr.length < 2) return 0;
-    const mean = arr.reduce((a,b)=>a+b,0)/arr.length;
-    return arr.reduce((a,b)=>a+Math.pow(b-mean,2),0)/arr.length;
-}
-
-function getColor(val, max) {
-    const pct = Math.min(val/max,1);
-    if (pct < 0.25) return "#22c55e";
-    if (pct < 0.5) return "#84cc16";
-    if (pct < 0.75) return "#f59e0b";
-    return "#a855f7";
-}
-
-const localAPI = {
-    async verifySession(userName, metrics, rawTimings) {
-        try {
-            const res = await fetch('/verify', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    user_id: userName,
-                    dwellTime: metrics.dwellTime,
-                    flightTime: metrics.flightTime,
-                    rhythmVariance: metrics.rhythmVariance,
-                    deleteRatio: metrics.deleteRatio,
-                    mouseJitter: metrics.mouseJitter,
-                    mouseVelocity: metrics.mouseVelocity,
-                    clickDuration: metrics.clickDuration,
-                    raw_timings: rawTimings 
-                })
-            });
-            return await res.json();
-        } catch(e) { 
-            console.error("FastAPI Connection failed:", e); 
-            return null; 
-        }
-    }
-};
-
-const MetricCard = ({ icon, label, value, unit, max, description }) => {
-    const pct = Math.min((value/max)*100,100);
-    const color = getColor(value, max);
-    return (
-        <div className="metric-card">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                <span style={{ fontSize: 20 }}>{icon}</span>
-                <span style={{ fontSize: 12, fontWeight: 500, color: '#94a3b8' }}>{label}</span>
+<div class="container">
+    <div class="card" style="padding-bottom: 1rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 28px;">🧠</span>
+                <h1 style="font-size: 1.6rem; font-weight: 500;">OpenBehavior-Auth Lab (Offline Mode)</h1>
             </div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 8 }}>
-                <span style={{ fontSize: 22, fontWeight: 500, fontFamily: 'monospace' }}>
-                    {typeof value === 'number' ? (value % 1 === 0 ? value : value.toFixed(1)) : '—'}
-                </span>
-                <span style={{ fontSize: 12, color: '#64748b' }}>{unit}</span>
-            </div>
-            <div style={{ height: 4, background: '#334155', borderRadius: 4, overflow: 'hidden', marginBottom: 6 }}>
-                <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: 4, transition: 'width 0.3s' }} />
-            </div>
-            <p style={{ fontSize: 11, color: '#64748b', margin: 0 }}>{description}</p>
+            <button onclick="handleReset()" style="padding: 6px 12px; border-radius: 20px; border: 1px solid #475569; background: transparent; color: #f8fafc;">⟳ Clear Cache</button>
         </div>
-    );
-};
+    </div>
 
-const App = () => {
-    const [userName, setUserName] = React.useState('user_101');
-    const [inputText, setInputText] = React.useState('');
-    const [chars, setChars] = React.useState([]);
-    const [metrics, setMetrics] = React.useState({
-        dwellTime:0, flightTime:0, rhythmVariance:0,
-        deleteRatio:0, mouseJitter:0, mouseVelocity:0, clickDuration:0
-    });
-    const [sessionHistory, setSessionHistory] = React.useState([]);
-    const [loading, setLoading] = React.useState(false);
+    <div class="card" style="padding: 1rem;">
+        <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 6px; background: #0f172a; padding: 8px 14px; border-radius: 30px; border: 1px solid #334155;">
+                <span>👤</span>
+                <input type="text" id="userName" value="user_101" style="border: none; background: transparent; outline: none; font-size: 14px;" />
+            </div>
+            <button id="submitBtn" onclick="handleSubmitToBrain()" disabled style="background: #38bdf8; color: #0f172a; border: none; padding: 8px 24px; border-radius: 30px; font-weight: bold;">
+                Submit to Brain
+            </button>
+        </div>
+    </div>
 
-    const dwellStart = React.useRef({});
-    const dwells = React.useRef([]);
-    const lastKeyUp = React.useRef(null);
-    const flights = React.useRef([]);
-    const totalKeys = React.useRef(0);
-    const deleteCount = React.useRef(0);
-    const mousePos = React.useRef(null);
-    const mouseHistory = React.useRef([]);
-    const jitterPoints = React.useRef([]);
-    const mouseVelRef = React.useRef(0);
-    const clickStart = React.useRef(null);
-    const clickDurations = React.useRef([]);
+    <div class="card">
+        <p style="font-size: 13px; margin-bottom: 8px; color: #94a3b8;">🔤 Type naturally to generate behavioral data:</p>
+        <div class="typing-area" id="typingArea">
+            <textarea class="hidden-textarea" id="inputText" rows="4" placeholder="Type the passphrase or move your mouse here..."></textarea>
+            <div class="typing-overlay" id="typingOverlay"></div>
+        </div>
+    </div>
 
-    const updateMetrics = React.useCallback(() => {
-        const avgDwell = dwells.current.length ? Math.round(dwells.current.reduce((a,b)=>a+b,0)/dwells.current.length) : 0;
-        const avgFlight = flights.current.length ? Math.round(flights.current.reduce((a,b)=>a+b,0)/flights.current.length) : 0;
-        const variance = dwells.current.length > 1 ? Math.round(Math.sqrt(calcVariance(dwells.current))) : 0;
-        const delRatio = totalKeys.current > 0 ? Math.round((deleteCount.current / totalKeys.current)*100) : 0;
-        const jitter = jitterPoints.current.length > 2 ? parseFloat((jitterPoints.current.reduce((a,b)=>a+b,0)/jitterPoints.current.length).toFixed(1)) : 0;
-        const vel = parseFloat(mouseVelRef.current.toFixed(2));
-        const avgClick = clickDurations.current.length ? Math.round(clickDurations.current.reduce((a,b)=>a+b,0)/clickDurations.current.length) : 0;
+    <div class="metric-grid" id="metricsContainer">
+        </div>
+
+    <div class="card" style="margin-top: 1.5rem;">
+        <h3 style="font-size: 1.1rem; margin-bottom: 1rem; color: #38bdf8;">📡 API Verification Log</h3>
+        <div style="overflow-x: auto;">
+            <table>
+                <thead>
+                    <tr><th>Time</th><th>Status</th><th>Score / Progress</th><th>System Message</th></tr>
+                </thead>
+                <tbody id="historyTableBody">
+                    <tr><td colspan="4" style="color: #64748b; font-size: 13px; text-align: center;">Waiting for first submission...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- STATE VARIABLES ---
+    const state = {
+        dwellStart: {}, dwells: [], lastKeyUp: null, flights: [],
+        totalKeys: 0, deleteCount: 0,
+        mousePos: null, mouseHistory: [], jitterPoints: [], mouseVel: 0,
+        clickStart: null, clickDurations: [],
+        metrics: { dwellTime: 0, flightTime: 0, rhythmVariance: 0, deleteRatio: 0, mouseJitter: 0, mouseVelocity: 0, clickDuration: 0 },
+        history: []
+    };
+
+    // --- HELPER MATH ---
+    function calcVariance(arr) {
+        if (arr.length < 2) return 0;
+        const mean = arr.reduce((a,b) => a+b, 0) / arr.length;
+        return arr.reduce((a,b) => a + Math.pow(b-mean, 2), 0) / arr.length;
+    }
+
+    function getColor(val, max) {
+        const pct = Math.min(val/max, 1);
+        if (pct < 0.25) return "#4ade80"; // Green
+        if (pct < 0.5) return "#a3e635";  // Light Green
+        if (pct < 0.75) return "#fbbf24"; // Yellow
+        return "#c084fc"; // Purple
+    }
+
+    // --- UI RENDERERS ---
+    const metricDefs = [
+        { key: 'dwellTime', icon: '⏱️', label: 'Dwell Time', unit: 'ms', max: 300, desc: 'Key hold duration' },
+        { key: 'flightTime', icon: '🌬️', label: 'Flight Time', unit: 'ms', max: 500, desc: 'Time between keys' },
+        { key: 'rhythmVariance', icon: '📈', label: 'Typing Rhythm', unit: 'σ ms', max: 150, desc: 'Rhythm consistency' },
+        { key: 'deleteRatio', icon: '📊', label: 'Delete Ratio', unit: '%', max: 40, desc: 'Error correction rate' },
+        { key: 'mouseJitter', icon: '🖱️', label: 'Mouse Jitter', unit: 'px²', max: 500, desc: 'Path curvature' },
+        { key: 'mouseVelocity', icon: '⚡', label: 'Mouse Velocity', unit: 'px/ms', max: 5, desc: 'Cursor speed' },
+        { key: 'clickDuration', icon: '⌛', label: 'Click Duration', unit: 'ms', max: 400, desc: 'Mouse hold time' }
+    ];
+
+    function renderMetrics() {
+        const container = document.getElementById('metricsContainer');
+        container.innerHTML = metricDefs.map(def => {
+            const val = state.metrics[def.key];
+            const displayVal = Number.isInteger(val) ? val : val.toFixed(1);
+            const pct = Math.min((val / def.max) * 100, 100);
+            const color = getColor(val, def.max);
+            
+            return `
+                <div class="metric-card">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                        <span style="font-size: 20px;">${def.icon}</span>
+                        <span style="font-size: 12px; font-weight: 500; color: #94a3b8;">${def.label}</span>
+                    </div>
+                    <div style="display: flex; align-items: baseline; gap: 4px; margin-bottom: 8px;">
+                        <span style="font-size: 22px; font-weight: 500; font-family: monospace;">${displayVal}</span>
+                        <span style="font-size: 12px; color: #64748b;">${def.unit}</span>
+                    </div>
+                    <div style="height: 4px; background: #334155; border-radius: 4px; overflow: hidden; margin-bottom: 6px;">
+                        <div style="height: 100%; width: ${pct}%; background: ${color}; border-radius: 4px; transition: width 0.3s;"></div>
+                    </div>
+                    <p style="font-size: 11px; color: #64748b; margin: 0;">${def.desc}</p>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function renderHistory() {
+        const tbody = document.getElementById('historyTableBody');
+        if (state.history.length === 0) return;
         
-        setMetrics({ dwellTime: avgDwell, flightTime: avgFlight, rhythmVariance: variance, deleteRatio: delRatio, mouseJitter: jitter, mouseVelocity: vel, clickDuration: avgClick });
-    }, []);
+        tbody.innerHTML = state.history.map(log => `
+            <tr>
+                <td>${log.time}</td>
+                <td><span class="status-badge status-${log.status}">${log.status}</span></td>
+                <td style="font-family: monospace;">${log.score}</td>
+                <td style="color: #94a3b8;">${log.message}</td>
+            </tr>
+        `).join('');
+    }
 
-    const handleKeyDown = React.useCallback((e) => {
-        const t = performance.now();
-        dwellStart.current[e.code] = t;
-        totalKeys.current += 1;
-        if (e.key === "Backspace" || e.key === "Delete") deleteCount.current += 1;
-    }, []);
+    function updateMetricsLogic() {
+        const avg = arr => arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : 0;
+        
+        state.metrics.dwellTime = Math.round(avg(state.dwells));
+        state.metrics.flightTime = Math.round(avg(state.flights));
+        state.metrics.rhythmVariance = state.dwells.length > 1 ? Math.round(Math.sqrt(calcVariance(state.dwells))) : 0;
+        state.metrics.deleteRatio = state.totalKeys > 0 ? Math.round((state.deleteCount / state.totalKeys) * 100) : 0;
+        state.metrics.mouseJitter = state.jitterPoints.length > 2 ? parseFloat(avg(state.jitterPoints).toFixed(1)) : 0;
+        state.metrics.mouseVelocity = parseFloat(state.mouseVel.toFixed(2));
+        state.metrics.clickDuration = Math.round(avg(state.clickDurations));
+        
+        renderMetrics();
+    }
 
-    const handleKeyUp = React.useCallback((e) => {
+    // --- EVENT LISTENERS ---
+    const inputEl = document.getElementById('inputText');
+    const overlayEl = document.getElementById('typingOverlay');
+    const submitBtn = document.getElementById('submitBtn');
+
+    inputEl.addEventListener('keydown', (e) => {
+        state.dwellStart[e.code] = performance.now();
+        state.totalKeys++;
+        if (e.key === "Backspace" || e.key === "Delete") state.deleteCount++;
+    });
+
+    inputEl.addEventListener('keyup', (e) => {
         const t = performance.now();
-        if (dwellStart.current[e.code]) {
-            const d = t - dwellStart.current[e.code];
-            dwells.current.push(d);
-            if (dwells.current.length > 100) dwells.current.shift();
-            delete dwellStart.current[e.code];
+        if (state.dwellStart[e.code]) {
+            state.dwells.push(t - state.dwellStart[e.code]);
+            if (state.dwells.length > 100) state.dwells.shift();
+            delete state.dwellStart[e.code];
         }
-        if (lastKeyUp.current !== null) {
-            const f = t - lastKeyUp.current;
+        if (state.lastKeyUp !== null) {
+            const f = t - state.lastKeyUp;
             if (f < 2000) {
-                flights.current.push(f);
-                if (flights.current.length > 100) flights.current.shift();
+                state.flights.push(f);
+                if (state.flights.length > 100) state.flights.shift();
             }
         }
-        lastKeyUp.current = t;
-        updateMetrics();
-    }, [updateMetrics]);
+        state.lastKeyUp = t;
+        updateMetricsLogic();
+    });
 
-    const handleChange = React.useCallback((e) => {
+    inputEl.addEventListener('input', (e) => {
         const val = e.target.value;
-        setInputText(val);
-        const newChars = val.split("").map((ch, i) => {
-            const dwell = dwells.current[i] ?? dwells.current[dwells.current.length-1] ?? 80;
-            let color;
-            if (dwell < 60) color = "#4ade80"; 
-            else if (dwell < 120) color = "#a3e635"; 
-            else if (dwell < 200) color = "#fbbf24"; 
-            else color = "#c084fc"; 
-            return { ch, color };
-        });
-        setChars(newChars);
-    }, []);
+        submitBtn.disabled = val.length < 5;
+        
+        // Update colorful overlay
+        overlayEl.innerHTML = val.split("").map((ch, i) => {
+            const dwell = state.dwells[i] ?? state.dwells[state.dwells.length-1] ?? 80;
+            const color = getColor(dwell, 200);
+            return `<span style="color: ${color}">${ch}</span>`;
+        }).join('');
+    });
 
-    const handleMouseMove = React.useCallback((e) => {
+    const typingArea = document.getElementById('typingArea');
+    typingArea.addEventListener('mousemove', (e) => {
         const now = performance.now();
-        const rect = e.currentTarget.getBoundingClientRect();
+        const rect = typingArea.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
-        if (mousePos.current) {
-            const dx = x - mousePos.current.x, dy = y - mousePos.current.y, dt = now - mousePos.current.t;
+        
+        if (state.mousePos) {
+            const dx = x - state.mousePos.x, dy = y - state.mousePos.y, dt = now - state.mousePos.t;
             if (dt > 0) {
-                const dist = Math.sqrt(dx*dx+dy*dy);
-                mouseVelRef.current = dist / dt;
-                mouseHistory.current.push({ x, y });
-                if (mouseHistory.current.length > 4) {
-                    const pts = mouseHistory.current.slice(-4);
+                state.mouseVel = Math.sqrt(dx*dx + dy*dy) / dt;
+                state.mouseHistory.push({x, y});
+                if (state.mouseHistory.length > 4) {
+                    const pts = state.mouseHistory.slice(-4);
                     let jitter = 0;
                     for (let i=1; i<pts.length-1; i++) {
                         const ax = pts[i].x - pts[i-1].x, ay = pts[i].y - pts[i-1].y;
                         const bx = pts[i+1].x - pts[i].x, by = pts[i+1].y - pts[i].y;
                         jitter += Math.abs(ax*by - ay*bx);
                     }
-                    jitterPoints.current.push(jitter/2);
-                    if (jitterPoints.current.length > 50) jitterPoints.current.shift();
-                    mouseHistory.current = mouseHistory.current.slice(-4);
+                    state.jitterPoints.push(jitter/2);
+                    if (state.jitterPoints.length > 50) state.jitterPoints.shift();
+                    state.mouseHistory = state.mouseHistory.slice(-4);
                 }
             }
         }
-        mousePos.current = { x, y, t: now };
-        updateMetrics();
-    }, [updateMetrics]);
+        state.mousePos = { x, y, t: now };
+        updateMetricsLogic();
+    });
 
-    const handleMouseDown = React.useCallback(() => { clickStart.current = performance.now(); }, []);
-    const handleMouseUp = React.useCallback(() => {
-        if (clickStart.current) {
-            clickDurations.current.push(performance.now() - clickStart.current);
-            if (clickDurations.current.length > 30) clickDurations.current.shift();
-            clickStart.current = null;
-            updateMetrics();
+    typingArea.addEventListener('mousedown', () => { state.clickStart = performance.now(); });
+    typingArea.addEventListener('mouseup', () => {
+        if (state.clickStart) {
+            state.clickDurations.push(performance.now() - state.clickStart);
+            if (state.clickDurations.length > 30) state.clickDurations.shift();
+            state.clickStart = null;
+            updateMetricsLogic();
         }
-    }, [updateMetrics]);
+    });
 
-    const handleSubmitToBrain = async () => {
-        if (!userName.trim()) return;
-        setLoading(true);
+    // --- API INTEGRATION ---
+    async function handleSubmitToBrain() {
+        const userName = document.getElementById('userName').value.trim();
+        if (!userName) return;
         
-        // This ensures the bot-detection array never crashes the backend
-        const rawArray = dwells.current.length > 2 ? dwells.current : [100, 105, 98]; 
-        const result = await localAPI.verifySession(userName, metrics, rawArray);
+        submitBtn.innerText = "Analyzing...";
+        submitBtn.disabled = true;
+
+        const rawArray = state.dwells.length > 2 ? state.dwells : [100, 105, 98]; 
         
-        if (result) {
-            const newLog = {
+        try {
+            const res = await fetch('/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: userName,
+                    dwellTime: state.metrics.dwellTime,
+                    flightTime: state.metrics.flightTime,
+                    rhythmVariance: state.metrics.rhythmVariance,
+                    deleteRatio: state.metrics.deleteRatio,
+                    mouseJitter: state.metrics.mouseJitter,
+                    mouseVelocity: state.metrics.mouseVelocity,
+                    clickDuration: state.metrics.clickDuration,
+                    raw_timings: rawArray 
+                })
+            });
+            
+            const result = await res.json();
+            
+            state.history.unshift({
                 time: new Date().toLocaleTimeString(),
                 status: result.status,
                 score: result.score || result.progress || "N/A",
                 message: result.message || result.reason || "Processed"
-            };
-            setSessionHistory([newLog, ...sessionHistory]);
-        } else {
+            });
+            renderHistory();
+            
+        } catch(e) {
             alert("Backend offline. Make sure Uvicorn is running!");
+            console.error(e);
         }
-        setLoading(false);
-    };
+        
+        submitBtn.innerText = "Submit to Brain";
+        submitBtn.disabled = false;
+    }
 
-    const handleReset = () => {
-        setInputText(''); setChars([]);
-        dwellStart.current = {}; dwells.current = []; lastKeyUp.current = null; flights.current = [];
-        totalKeys.current = 0; deleteCount.current = 0;
-        mousePos.current = null; mouseHistory.current = []; jitterPoints.current = []; mouseVelRef.current = 0;
-        clickStart.current = null; clickDurations.current = [];
-        setMetrics({ dwellTime:0, flightTime:0, rhythmVariance:0, deleteRatio:0, mouseJitter:0, mouseVelocity:0, clickDuration:0 });
-    };
+    function handleReset() {
+        inputEl.value = '';
+        overlayEl.innerHTML = '';
+        submitBtn.disabled = true;
+        
+        Object.assign(state, {
+            dwellStart: {}, dwells: [], lastKeyUp: null, flights: [],
+            totalKeys: 0, deleteCount: 0, mousePos: null, mouseHistory: [], 
+            jitterPoints: [], mouseVel: 0, clickStart: null, clickDurations: [],
+            metrics: { dwellTime: 0, flightTime: 0, rhythmVariance: 0, deleteRatio: 0, mouseJitter: 0, mouseVelocity: 0, clickDuration: 0 }
+        });
+        updateMetricsLogic();
+    }
 
-    return (
-        <div className="container">
-            <div className="card" style={{ paddingBottom: '1rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <span style={{ fontSize: 28 }}>🧠</span>
-                        <h1 style={{ fontSize: '1.6rem', fontWeight: 500 }}>OpenBehavior-Auth Lab</h1>
-                    </div>
-                    <button onClick={handleReset} style={{ padding: '6px 12px', borderRadius: 20, border: '1px solid #475569', background: 'transparent', color: '#f8fafc' }}>⟳ Clear Cache</button>
-                </div>
-            </div>
-
-            <div className="card" style={{ padding: '1rem' }}>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#0f172a', padding: '8px 14px', borderRadius: 30, border: '1px solid #334155' }}>
-                        <span>👤</span>
-                        <input type="text" placeholder="User ID" value={userName} onChange={e => setUserName(e.target.value)} style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: 14 }} />
-                    </div>
-                    <button onClick={handleSubmitToBrain} disabled={loading || inputText.length < 5} style={{ background: '#38bdf8', color: '#0f172a', border: 'none', padding: '8px 24px', borderRadius: 30, fontWeight: 'bold' }}>
-                        {loading ? 'Analyzing...' : 'Submit to Brain'}
-                    </button>
-                </div>
-            </div>
-
-            <div className="card">
-                <p style={{ fontSize: 13, marginBottom: 8, color: '#94a3b8' }}>🔤 Type naturally to generate behavioral data:</p>
-                <div className="typing-area" onMouseMove={handleMouseMove} onMouseDown={handleMouseDown} onMouseUp={handleMouseUp}>
-                    <textarea className="hidden-textarea" value={inputText} onChange={handleChange} onKeyDown={handleKeyDown} onKeyUp={handleKeyUp} rows={4} placeholder="Type the passphrase or move your mouse here..." />
-                    <div className="typing-overlay">{chars.map((c,i) => <span key={i} style={{ color: c.color }}>{c.ch}</span>)}</div>
-                </div>
-            </div>
-
-            <div className="metric-grid">
-                <MetricCard icon="⏱️" label="Dwell Time" value={metrics.dwellTime} unit="ms" max={300} description="Key hold duration" />
-                <MetricCard icon="🌬️" label="Flight Time" value={metrics.flightTime} unit="ms" max={500} description="Time between keys" />
-                <MetricCard icon="📈" label="Typing Rhythm" value={metrics.rhythmVariance} unit="σ ms" max={150} description="Rhythm consistency" />
-                <MetricCard icon="📊" label="Delete Ratio" value={metrics.deleteRatio} unit="%" max={40} description="Error correction rate" />
-                <MetricCard icon="🖱️" label="Mouse Jitter" value={metrics.mouseJitter} unit="px²" max={500} description="Path curvature" />
-                <MetricCard icon="⚡" label="Mouse Velocity" value={metrics.mouseVelocity} unit="px/ms" max={5} description="Cursor speed" />
-                <MetricCard icon="⌛" label="Click Duration" value={metrics.clickDuration} unit="ms" max={400} description="Mouse hold time" />
-            </div>
-
-            <div className="card" style={{ marginTop: '1.5rem' }}>
-                <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', color: '#38bdf8' }}>📡 API Verification Log</h3>
-                {sessionHistory.length === 0 ? (
-                    <p style={{ color: '#64748b', fontSize: 13 }}>Click 'Submit to Brain' to see your API responses here.</p>
-                ) : (
-                    <div style={{ overflowX: 'auto' }}>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Time</th>
-                                    <th>Status</th>
-                                    <th>Score / Progress</th>
-                                    <th>System Message</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {sessionHistory.map((log, idx) => (
-                                    <tr key={idx}>
-                                        <td>{log.time}</td>
-                                        <td><span className={`status-badge status-${log.status}`}>{log.status}</span></td>
-                                        <td style={{ fontFamily: 'monospace' }}>{log.score}</td>
-                                        <td style={{ color: '#94a3b8' }}>{log.message}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
-            </div>
-        </div>
-    );
-};
-
-ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    // Initialize metrics on load
+    renderMetrics();
 </script>
 </body>
 </html>
