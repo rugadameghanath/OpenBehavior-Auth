@@ -9,6 +9,12 @@ CREATE TABLE UserProfiles (
     last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP                -- Last time the 'Golden Baseline' changed
 );
 
+-- SEED DATA: Add a dummy user so you can test your code immediately
+INSERT INTO UserProfiles (user_hash, device_type, avg_dwell, avg_flight, session_count)
+VALUES ('test_user_123', 'desktop', 85.0, 120.0, 3); -- Starting at 3 sessions for testing
+
+COMMIT;
+
 -- 2. THE SESSIONS: Audit and mismatch tracking
 CREATE TABLE BehaviorLogs (
     log_id RAW(16) DEFAULT SYS_GUID() PRIMARY KEY,                  -- Unique ID for this specific session
