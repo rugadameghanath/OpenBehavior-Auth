@@ -58,7 +58,19 @@ The system uses a **weighted similarity score** to determine if the current sess
 
 ---
 
-### Tips for your GitHub Launch:
-1.  **License:** Use the **MIT License** if you want maximum adoption, or **AGPL** if you want to ensure that anyone who modifies the engine must share their improvements back.
-2.  **The "Hook":** In your intro, mention that this helps satisfy **Regulatory Requirements** (like the RBI 668 circular for RBA). This makes it professionally relevant to developers in the fintech space.
-3.  **Visuals:** Add a "Live Demo" link where people can type a sentence twice and see their "Similarity Score" in real-time.
+## ⚙️ Data Storage Configuration
+
+OpenBehavior-Auth is designed to be infrastructure-agnostic. You can deploy this project locally, on serverless platforms, or on enterprise hardware without modifying the core API logic.
+
+Data routing is controlled entirely via the `storage_mode` parameter in `config.json`.
+
+| `storage_mode` Value | Infrastructure | Description |
+| :--- | :--- | :--- |
+| `"local_csv"` | **Local Machine (Default)** | Perfect for testing and student projects. Generates a local `biometrics_db.csv` file that can be opened directly in Microsoft Excel. |
+| `"sql_db"` | **VPS / Enterprise** | Routes data to the SQL adapter. Designed for deployment on DigitalOcean, AWS EC2, or internal bank servers using SQLite, PostgreSQL, or Oracle. |
+| `"cloud_api"` | **Netlify / Vercel / Cloudflare** | Routes data to the Webhook adapter. Ideal for serverless deployments where you want to POST data to a third-party service like Google Sheets API, Supabase, or Firebase. |
+
+**To change your environment:**
+1. Open `config.json`.
+2. Update the `"storage_mode"` string.
+3. Restart the FastAPI server. The router will automatically attach the correct database adapter.
