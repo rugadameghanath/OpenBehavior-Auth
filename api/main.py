@@ -91,7 +91,7 @@ db_user = {
             "message": "Building behavioral profile. No verification yet."
         }
 '''
-if db_user["session_count"] < 5:
+    if db_user["session_count"] < 5:
         db_user["session_count"] += 1  # <--- THIS SAVES THE PROGRESS
         return {
             "status": "ENROLLING", 
