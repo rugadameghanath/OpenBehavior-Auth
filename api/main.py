@@ -28,8 +28,8 @@ def load_config():
 # Global variables to act as our 'In-Memory' Database
 config = load_config()
 db_user = {
-    "avg_dwell": config["baseline"]["avg_dwell"], 
-    "avg_flight": config["baseline"]["avg_flight"], 
+    "dwellTime": config["baseline"]["dwellTime"], 
+    "flightTime": config["baseline"]["flightTime"], 
     "session_count": config["starting_session_count"] 
 }
 
