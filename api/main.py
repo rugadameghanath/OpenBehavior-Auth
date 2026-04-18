@@ -36,7 +36,7 @@ async def verify_user(data: BehaviorData):
         "profile_id": 101,
         "avg_dwell": 85.0, 
         "avg_flight": 120.0, 
-        "session_count": 3  -- Change this to 6 to test the verification phase
+        "session_count": 3  # Change this to 6 to test the verification phase
     }
 
     # STEP A: Bot Check (Always do this first)
