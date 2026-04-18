@@ -18,53 +18,51 @@
     </div>
 
     <script>
-        let timings = [];
-        let lastKeyTime = performance.now();
+    let metrics = { dwells: [], flights: [], lastUp: null, lastDown: null };
 
-        const input = document.getElementById('typeBox');
-        const display = document.getElementById('result');
+    // Capture the typing rhythm
+    document.getElementById('inputBox').addEventListener('keydown', (e) => {
+        metrics.lastDown = performance.now();
+    });
 
-        input.addEventListener('keydown', (e) => {
-            const now = performance.now();
-            const flightTime = now - lastKeyTime;
+    document.getElementById('inputBox').addEventListener('keyup', (e) => {
+        const now = performance.now();
+        if (metrics.lastDown) metrics.dwells.push(now - metrics.lastDown);
+        if (metrics.lastUp) metrics.flights.push(metrics.lastDown - metrics.lastUp);
+        metrics.lastUp = now;
+
+        // Every 10 characters, send the data to your Python API
+        if (metrics.dwells.length % 10 === 0) {
+            const avg = arr => arr.length ? arr.reduce((a, b) => a + b) / arr.length : 0;
             
-            // Capture flight time (time between keys)
-            if (timings.length < 15) {
-                timings.push(Math.round(flightTime));
-            }
-            lastKeyTime = now;
+            const payload = {
+                user_id: "user_101",
+                // These 7 keys MUST match your Python BehaviorData class exactly
+                dwellTime: avg(metrics.dwells),
+                flightTime: avg(metrics.flights),
+                rhythmVariance: 15.0, // Placeholder
+                deleteRatio: 0, 
+                mouseJitter: 0,
+                mouseVelocity: 0,
+                clickDuration: 0,
+                raw_timings: metrics.dwells // Used for the Bot Check
+            };
 
-            // Once we have 10 samples, send to the Python API
-            if (timings.length === 10) {
-                const avgFlight = timings.reduce((a, b) => a + b) / timings.length;
-                
-                display.innerText = "Sending to Python API...";
-
-                fetch('http://127.0.0.1:8000/verify', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        user_id: "meghanath_local_test",
-                        device_type: "desktop",
-                        avg_dwell: 85.0, // Mocked baseline
-                        avg_flight: avgFlight,
-                        raw_timings: timings
-                    })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    display.style.color = data.status === "REJECTED" ? "red" : "green";
-                    display.innerText = `Status: ${data.status} | Progress: ${data.progress || 'N/A'}`;
-                    // Clear timings for next batch
-                    timings = [];
-                })
-                .catch(err => {
-                    display.innerText = "Error: Check if Uvicorn is running!";
-                    display.style.color = "red";
-                    console.error(err);
-                });
-            }
-        });
-    </script>
+            fetch('http://127.0.0.1:8000/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                // This updates the labels on your screen
+                document.getElementById('status').innerText = data.status;
+                document.getElementById('progress').innerText = data.progress || "Verified";
+                console.log("Response from API:", data);
+            })
+            .catch(err => console.error("API Error:", err));
+        }
+    });
+</script>
 </body>
 </html>
