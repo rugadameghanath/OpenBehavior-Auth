@@ -254,12 +254,22 @@
     });
 
     // --- API INTEGRATION ---
-    async function handleSubmitToBrain() {
+async function handleSubmitToBrain() {
         const userName = document.getElementById('userName').value.trim();
         if (!userName) return;
         
         submitBtn.innerText = "Analyzing...";
         submitBtn.disabled = true;
+
+        // --- FIX 1: GATHER THE SILENT DEVICE DATA ---
+        // This is now mandatory for the Python 'device_info' field
+        const deviceInfo = {
+            screen: `${window.screen.width}x${window.screen.height}`,
+            platform: navigator.platform,
+            cores: navigator.hardwareConcurrency || "N/A",
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            language: navigator.language
+        };
 
         const rawArray = state.dwells.length > 2 ? state.dwells : [100, 105, 98]; 
         
@@ -276,29 +286,32 @@
                     mouseJitter: state.metrics.mouseJitter,
                     mouseVelocity: state.metrics.mouseVelocity,
                     clickDuration: state.metrics.clickDuration,
-                    raw_timings: rawArray 
+                    raw_timings: rawArray,
+                    device_info: deviceInfo // --- FIX 2: SEND DEVICE DATA ---
                 })
             });
             
             const result = await res.json();
             
+            // --- FIX 3: MATCH THE LOG KEYS ---
             state.history.unshift({
                 time: new Date().toLocaleTimeString(),
-                status: result.status,
+                // Use logical OR (||) to capture either score or enrollment progress
+                status: result.status || "ERROR", 
                 score: result.score || result.progress || "N/A",
                 message: result.message || result.reason || "Processed"
             });
             renderHistory();
             
         } catch(e) {
-            alert("Backend offline. Make sure Uvicorn is running!");
+            alert("Backend Connection Failed!");
             console.error(e);
         }
         
         submitBtn.innerText = "Submit to Brain";
         submitBtn.disabled = false;
     }
-
+    
     function handleReset() {
         inputEl.value = '';
         overlayEl.innerHTML = '';
