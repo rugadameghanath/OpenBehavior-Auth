@@ -1,5 +1,6 @@
 {
     "storage_mode": "local_csv", 
+    "enrollment_sessions": 3,
     "threshold": 75.0,
     "starting_session_count": 0,
     "baseline": {
