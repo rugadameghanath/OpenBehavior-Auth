@@ -216,7 +216,6 @@ logs/
 # config.json
 
 # --- Python Environment ---
-# Standard ignore list for Python development
 __pycache__/
 *.pyc
 .venv/
