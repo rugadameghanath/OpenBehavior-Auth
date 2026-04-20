@@ -5,7 +5,7 @@ OpenBehavior-Auth: Universal Biometric & Environmental Engine
 DESCRIPTION:
 This engine provides a multi-layered security approach for digital 
 banking operations. It supports three distinct storage backends:
-1.  Local CSV: 200-row buffered audit logs for local forensics.
+1.  Local CSV: Smart-buffered audit logs (200-row rotation) for local forensics.
 2.  Google Sheets: Real-time cloud-based monitoring.
 3.  SQL Database: Production-grade relational storage (Oracle/SQL).
 
@@ -36,7 +36,6 @@ from datetime import datetime
 
 app = FastAPI(title="OpenBehavior-Auth Engine")
 
-# Configure CORS for cross-origin local testing
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -45,10 +44,7 @@ app.add_middleware(
 )
 
 def load_config():
-    """
-    Loads configuration from config.json. 
-    Includes fallback defaults to ensure system stability.
-    """
+    """Loads configuration with defensive fallbacks for stability."""
     config_path = os.path.join(os.path.dirname(__file__), "..", "config.json")
     try:
         with open(config_path, "r") as f:
@@ -76,10 +72,7 @@ config = load_config()
 # =====================================================================
 
 class StorageManager:
-    """
-    The Storage Factory handles data persistence across different media.
-    Incorporates Smart-Rotation for Local CSV to prevent file clutter.
-    """
+    """Handles data persistence and Smart-Rotation for Local CSV."""
     def __init__(self):
         self.mode = config.get("storage_mode", "local_csv")
         self.logs_dir = "logs"
@@ -94,7 +87,6 @@ class StorageManager:
         ]
 
     def save(self, user_id: str, status: str, score: float, metrics: dict):
-        """Routes the data to the correct backend based on config.json"""
         if self.mode == "local_csv":
             return self._save_local_csv(user_id, status, score, metrics)
         elif self.mode == "google_sheets":
@@ -103,7 +95,7 @@ class StorageManager:
             return self._save_sql_db(user_id, status, score, metrics)
 
     def _get_active_file(self):
-        """Determines whether to append to latest file or rotate (default 200 rows)."""
+        """Determines whether to append to latest file or rotate based on row limits."""
         max_rows = config.get("max_log_rows", 200)
         existing_logs = sorted([f for f in os.listdir(self.logs_dir) if f.startswith("LOG_")])
         
@@ -128,7 +120,6 @@ class StorageManager:
         return new_path
 
     def _save_local_csv(self, user_id, status, score, metrics):
-        """Appends data to the active CSV buffered log."""
         target_file = self._get_active_file()
         device = getattr(metrics, 'device_info', {})
 
@@ -144,7 +135,6 @@ class StorageManager:
                     device.get("cores", "N/A"), device.get("timezone", "N/A"),
                     device.get("language", "N/A")
                 ])
-            print(f"[*] Local Audit Saved: {target_file}")
         except Exception as e:
             print(f"[Error] Local CSV Write Failed: {e}")
 
@@ -156,7 +146,7 @@ class StorageManager:
         conn_str = config.get("db_connection_string")
         print(f"[Storage] Mock-up: Writing to SQL Database via {conn_str}")
 
-# Initialize the global storage manager
+# Global storage instance
 db = StorageManager()
 
 # =====================================================================
@@ -203,7 +193,6 @@ def calculate_similarity(baseline: dict, current: BehaviorData):
     avg_similarity = sum(dimension_scores) / len(dimension_scores)
     return avg_similarity * 100
 
-
 # =====================================================================
 # SECTION 4: THE AUTHENTICATION GATEKEEPER
 # =====================================================================
@@ -216,7 +205,6 @@ async def verify_user(data: BehaviorData):
     ENROLLMENT_LIMIT = config.get("enrollment_sessions", 3)
 
     if not is_human(data.raw_timings):
-        print(f"[Security] Bot Detected for user: {data.user_id}")
         return {"status": "REJECTED", "reason": "Non-human variance detected."}
     
     if db_user["session_count"] < ENROLLMENT_LIMIT:
@@ -242,7 +230,6 @@ async def verify_user(data: BehaviorData):
 # =====================================================================
 # SECTION 5: STATIC SERVER
 # =====================================================================
-
 app.mount("/", StaticFiles(directory=".", html=True), name="static")
 
 if __name__ == "__main__":
