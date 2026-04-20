@@ -81,15 +81,35 @@ Data routing is controlled entirely via the `storage_mode` parameter in `config.
 | `"sql_db"` | **VPS / Enterprise** | Routes data to the SQL adapter. Designed for deployment on DigitalOcean, AWS EC2, or internal bank servers using SQLite, PostgreSQL, or Oracle. |
 | `"cloud_api"` | **Netlify / Vercel / Cloudflare** | Routes data to the Webhook adapter. Ideal for serverless deployments where you want to POST data to a third-party service like Google Sheets API, Supabase, or Firebase. |
 
-Parameter,Default,Description
-enrollment_sessions,3,Number of attempts required to build the initial user profile.
-threshold,50.0,The similarity score (0-100) required to achieve CERTIFIED status.
-storage_mode,local_csv,Defines the storage backend (currently supports daily ISO-rotated CSVs).
+
 
 **To change your environment:**
 1. Open `config.json`.
 2. Update the `"storage_mode"` string.
 3. Restart the FastAPI server. The router will automatically attach the correct database adapter.
+
+
+Parameter,Default,Description
+enrollment_sessions,3,Number of attempts required to build the initial user profile.
+threshold,50.0,The similarity score (0-100) required to achieve CERTIFIED status.
+storage_mode,local_csv,Defines the storage backend (currently supports daily ISO-rotated CSVs).
+
+## 🚀 Quick Start (Local Testing)
+
+1. **Clone & Install:**
+   ```bash
+   git clone [https://github.com/your-username/OpenBehavior-Auth.git](https://github.com/your-username/OpenBehavior-Auth.git)
+   cd OpenBehavior-Auth
+   pip install fastapi uvicorn
+
+2. **Launch the Engine:**
+
+Bash
+python -m uvicorn api.main:app --reload
+
+3. **Access the Lab:**
+Open http://127.0.0.1:8000/test.html in your browser.
+Note: No internet connection is required as the lab uses zero-dependency Vanilla JS.
 
 
 ## 🔒 Privacy & Data Policy
