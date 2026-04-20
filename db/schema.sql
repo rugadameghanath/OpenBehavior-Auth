@@ -1,6 +1,6 @@
 -- =====================================================================
 -- OPENBEHAVIOR-AUTH DATABASE SCHEMA
--- Target: Oracle / SQL Server / MySQL
+-- Target: Oracle / Microsoft SQL Server
 -- =====================================================================
 
 -- 1. USER_PROFILES: Stores the 'Golden Baseline' for each user.
@@ -8,21 +8,19 @@ CREATE TABLE UserProfiles (
     UserID VARCHAR(50) PRIMARY KEY,
     EnrollmentDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     SessionCount INT DEFAULT 0,
-    -- Behavioral Baselines
     BaseDwell FLOAT,
     BaseFlight FLOAT,
     BaseVariance FLOAT,
-    -- Device Binding
     LastKnownPlatform VARCHAR(50),
     LastKnownCores INT
 );
 
 -- 2. AUTH_AUDIT_LOGS: The Forensic Evidence for every login.
 CREATE TABLE AuthAuditLogs (
-    AuthID VARCHAR(100) PRIMARY KEY, -- Maps to our LOG_YYYYMMDD_...
+    AuthID VARCHAR(100) PRIMARY KEY, 
     Timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UserID VARCHAR(50),
-    AuthStatus VARCHAR(20), -- CERTIFIED, SUSPICIOUS, ENROLLING, REJECTED
+    AuthStatus VARCHAR(20), 
     MatchScore FLOAT,
     
     -- Behavioral Analytics
@@ -40,7 +38,6 @@ CREATE TABLE AuthAuditLogs (
     ClientTimezone VARCHAR(50),
     ClientLanguage VARCHAR(10),
     
-    -- Foreign Key Relation
     CONSTRAINT fk_user FOREIGN KEY (UserID) REFERENCES UserProfiles(UserID)
 );
 
