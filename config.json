@@ -1,9 +1,10 @@
 {
-"storage_mode": "local_csv", 
+    "storage_mode": "local_csv", 
     "max_log_rows": 200,
     "enrollment_sessions": 3,
     "threshold": 50.0,
-    "starting_session_count": 0,
+    "google_sheet_url": "https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID_HERE",
+    "db_connection_string": "oracle+cx_oracle://user:password@server:port/service_name",
     "baseline": {
         "dwellTime": 85.0,
         "flightTime": 120.0,
