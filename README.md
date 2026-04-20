@@ -16,6 +16,13 @@ OBA operates on a "Collect -> Extract -> Score" pipeline. It doesn't store what 
 3. **Multi-Profile Matching:** Compare against historical averages based on Device Context.
 4. **Adaptive Baseline:** Automatically updates the user's "Golden Profile" to account for natural behavior drift.
 
+## 🛡️ Invisible Device Binding
+Beyond behavioral rhythm, the engine captures a **Hardware Fingerprint** to verify the environment:
+* **CPU Core Count:** Detects hardware-level shifts.
+* **Screen Resolution:** Identifies display environment anomalies.
+* **Timezone Consistency:** Cross-references network IP location with device system time.
+* **Platform/OS Signature:** Ensures the session originates from authorized operating systems.
+
 ---
 
 ## 🛠 Project Structure
@@ -28,6 +35,10 @@ OBA operates on a "Collect -> Extract -> Score" pipeline. It doesn't store what 
 ```
 
 ---
+## 📂 Audit Trail Architecture
+Each authentication event generates a self-contained **ISO 8601** compliant CSV package in the `logs/` folder.
+* **Format:** `LOG_YYYYMMDD_HHMMSS_ffffff.csv`
+* **PII Protection:** User identities are stored *inside* the encrypted/secure files, while filenames remain strictly chronological to prevent metadata leaks.
 
 ## 📊 Database Logic: Handling Multi-Context Drift
 OBA doesn't just store one "average." It maintains a **Contextual Profile** to prevent false negatives when a user switches from a laptop to a mobile device.
@@ -70,7 +81,20 @@ Data routing is controlled entirely via the `storage_mode` parameter in `config.
 | `"sql_db"` | **VPS / Enterprise** | Routes data to the SQL adapter. Designed for deployment on DigitalOcean, AWS EC2, or internal bank servers using SQLite, PostgreSQL, or Oracle. |
 | `"cloud_api"` | **Netlify / Vercel / Cloudflare** | Routes data to the Webhook adapter. Ideal for serverless deployments where you want to POST data to a third-party service like Google Sheets API, Supabase, or Firebase. |
 
+Parameter,Default,Description
+enrollment_sessions,3,Number of attempts required to build the initial user profile.
+threshold,50.0,The similarity score (0-100) required to achieve CERTIFIED status.
+storage_mode,local_csv,Defines the storage backend (currently supports daily ISO-rotated CSVs).
+
 **To change your environment:**
 1. Open `config.json`.
 2. Update the `"storage_mode"` string.
 3. Restart the FastAPI server. The router will automatically attach the correct database adapter.
+
+
+## 🔒 Privacy & Data Policy
+This engine follows a **Logic-Only** synchronization policy. 
+- **Tracked Files:** All `.py` and `.html` files containing core logic.
+- **Ignored Files:** All files in the `logs/` directory and `.csv` files are excluded via `.gitignore`. 
+This ensures that your local biometric audit trails remain private and are never uploaded to the public repository.
+
