@@ -6,36 +6,21 @@
     <title>OpenBehavior-Auth | Zero-Dependency Lab</title>
     <style>
         :root {
-            --bg-color: #0f172a;
-            --panel-bg: #1e293b;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --accent: #3b82f6;
-            --success: #10b981;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-            --border: #334155;
+            --bg-color: #0f172a; --panel-bg: #1e293b; --text-main: #f8fafc;
+            --text-muted: #94a3b8; --accent: #3b82f6; --success: #10b981;
+            --warning: #f59e0b; --danger: #ef4444; --border: #334155;
         }
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            margin: 0;
-            padding: 2rem;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 2rem;
-            max-width: 1400px;
-            margin: auto;
+            background-color: var(--bg-color); color: var(--text-main);
+            margin: 0; padding: 2rem; display: grid; grid-template-columns: 1fr 1fr;
+            gap: 2rem; max-width: 1400px; margin: auto;
         }
 
         .panel {
-            background-color: var(--panel-bg);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 1.5rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            background-color: var(--panel-bg); border: 1px solid var(--border);
+            border-radius: 8px; padding: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
         }
 
         h2 { margin-top: 0; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
@@ -44,125 +29,88 @@
         .input-group label { display: block; margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.9rem; }
         
         input[type="text"], textarea {
-            width: 100%;
-            padding: 0.75rem;
-            background-color: var(--bg-color);
-            border: 1px solid var(--border);
-            color: var(--text-main);
-            border-radius: 4px;
-            box-sizing: border-box;
-            font-family: monospace;
+            width: 100%; padding: 0.75rem; background-color: var(--bg-color);
+            border: 1px solid var(--border); color: var(--text-main);
+            border-radius: 4px; box-sizing: border-box; font-family: monospace;
         }
-        
         textarea { height: 120px; resize: vertical; }
 
         .btn-group { display: flex; gap: 1rem; margin-top: 1rem; }
-        
         button {
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 4px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: opacity 0.2s;
+            padding: 0.75rem 1.5rem; border: none; border-radius: 4px;
+            font-weight: bold; cursor: pointer; transition: opacity 0.2s;
         }
         button:disabled { opacity: 0.5; cursor: not-allowed; }
         button:hover:not(:disabled) { opacity: 0.9; }
-        
         .btn-primary { background-color: var(--accent); color: white; }
         .btn-secondary { background-color: var(--border); color: white; }
 
+        /* Updated to hold 7 metrics cleanly */
         .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 1rem;
-            margin-top: 1rem;
+            display: grid; grid-template-columns: repeat(4, 1fr);
+            gap: 1rem; margin-top: 1rem;
         }
-
         .metric-card {
-            background-color: var(--bg-color);
-            padding: 1rem;
-            border-radius: 4px;
-            border: 1px solid var(--border);
-            text-align: center;
+            background-color: var(--bg-color); padding: 1rem;
+            border-radius: 4px; border: 1px solid var(--border); text-align: center;
         }
-        .metric-value { font-size: 1.5rem; font-weight: bold; color: var(--accent); }
-        .metric-label { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; }
+        .metric-value { font-size: 1.2rem; font-weight: bold; color: var(--accent); }
+        .metric-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; }
 
         .log-table { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: 0.9rem; }
         .log-table th, .log-table td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border); }
-        .log-table th { color: var(--text-muted); }
-        
         .status-CERTIFIED { color: var(--success); font-weight: bold; }
         .status-ENROLLING { color: var(--warning); font-weight: bold; }
         .status-SUSPICIOUS, .status-REJECTED, .status-ERROR { color: var(--danger); font-weight: bold; }
     </style>
 </head>
 <body>
-
     <div class="panel">
         <h2>Biometric Capture Sandbox</h2>
-        
         <div class="input-group">
-            <label>Target User ID (e.g., admin_01)</label>
+            <label>Target User ID</label>
             <input type="text" id="userName" value="test_user_01" autocomplete="off">
         </div>
-
         <div class="input-group">
             <label>Type the standard banking phrase below:</label>
             <textarea id="captureArea" placeholder="The quick brown fox jumps over the lazy dog." spellcheck="false"></textarea>
         </div>
-
         <div class="btn-group">
             <button id="submitBtn" class="btn-primary" disabled>Submit to Brain</button>
             <button id="resetBtn" class="btn-secondary">Reset Session</button>
         </div>
-
-        <div class="metrics-grid" id="metricsDisplay">
-            </div>
+        <div class="metrics-grid" id="metricsDisplay"></div>
     </div>
 
     <div class="panel">
         <h2>Session Audit Trail</h2>
         <table class="log-table">
             <thead>
-                <tr>
-                    <th>Time</th>
-                    <th>Status</th>
-                    <th>Score / Progress</th>
-                    <th>System Message</th>
-                </tr>
+                <tr><th>Time</th><th>Status</th><th>Score/Progress</th><th>System Message</th></tr>
             </thead>
             <tbody id="logBody">
-                <tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No activity yet. Start typing to begin.</td></tr>
+                <tr><td colspan="4" style="text-align:center; color:var(--text-muted);">Awaiting Input...</td></tr>
             </tbody>
         </table>
     </div>
 
     <script>
-        // --- 1. STATE MANAGEMENT ---
         const state = {
             dwellStart: {}, dwells: [], lastKeyUp: null, flights: [],
-            totalKeys: 0, deleteCount: 0,
-            mousePos: null, mouseHistory: [], jitterPoints: [], mouseVel: 0,
+            totalKeys: 0, deleteCount: 0, mousePos: null, mouseHistory: [], 
             clickStart: null, clickDurations: [],
             metrics: { dwellTime: 0, flightTime: 0, rhythmVariance: 0, deleteRatio: 0, mouseJitter: 0, mouseVelocity: 0, clickDuration: 0 },
             history: []
         };
 
-        // DOM Elements
         const inputEl = document.getElementById('captureArea');
         const submitBtn = document.getElementById('submitBtn');
         const resetBtn = document.getElementById('resetBtn');
-        const metricsContainer = document.querySelector('.metrics-grid');
+        const metricsContainer = document.getElementById('metricsDisplay');
         const logBody = document.getElementById('logBody');
 
-        // --- 2. CAPTURE LOGIC (Keyboard & Mouse) ---
-        
         inputEl.addEventListener('keydown', (e) => {
-            if (!state.dwellStart[e.key]) {
-                state.dwellStart[e.key] = performance.now();
-            }
+            if (!state.dwellStart[e.key]) state.dwellStart[e.key] = performance.now();
             if (e.key === 'Backspace' || e.key === 'Delete') state.deleteCount++;
             state.totalKeys++;
             submitBtn.disabled = false;
@@ -172,7 +120,7 @@
             const now = performance.now();
             if (state.dwellStart[e.key]) {
                 const dwell = now - state.dwellStart[e.key];
-                if (dwell < 1000) state.dwells.push(dwell); // Ignore unnatural holds
+                if (dwell < 1000) state.dwells.push(dwell);
                 delete state.dwellStart[e.key];
             }
             if (state.lastKeyUp) {
@@ -204,31 +152,27 @@
             }
         });
 
-        // --- 3. MATH & METRICS UPDATER ---
-
         function getAvg(arr) { return arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : 0; }
         function getVariance(arr, mean) { return arr.length > 1 ? arr.reduce((a,b)=>a + Math.pow(b - mean, 2), 0) / arr.length : 0; }
 
         function updateMetricsLogic() {
             const avgDwell = getAvg(state.dwells);
+            let totalDist = 0; let totalTime = 1; let jitter = 0;
             
-            // Mouse Velocity & Jitter Approx
-            let totalDist = 0; let totalTime = 1;
             if (state.mouseHistory.length > 1) {
                 totalDist = state.mouseHistory.reduce((acc, val) => acc + val.dist, 0);
                 totalTime = state.mouseHistory[state.mouseHistory.length-1].time - state.mouseHistory[0].time;
+                const meanDist = totalDist / state.mouseHistory.length;
+                jitter = Math.sqrt(state.mouseHistory.reduce((acc, val) => acc + Math.pow(val.dist - meanDist, 2), 0) / state.mouseHistory.length);
             }
 
             state.metrics = {
-                dwellTime: avgDwell,
-                flightTime: getAvg(state.flights),
+                dwellTime: avgDwell, flightTime: getAvg(state.flights),
                 rhythmVariance: getVariance(state.dwells, avgDwell),
                 deleteRatio: state.totalKeys > 0 ? (state.deleteCount / state.totalKeys) * 100 : 0,
-                mouseVelocity: (totalDist / totalTime) * 10,
-                mouseJitter: Math.random() * 15, // Mocked for lab simplicity
-                clickDuration: getAvg(state.clickDurations)
+                mouseVelocity: totalTime > 0 ? (totalDist / totalTime) * 10 : 0,
+                mouseJitter: jitter, clickDuration: getAvg(state.clickDurations)
             };
-
             renderLiveMetrics();
         }
 
@@ -237,24 +181,21 @@
                 <div class="metric-card"><div class="metric-value">${state.metrics.dwellTime.toFixed(1)}ms</div><div class="metric-label">Avg Dwell</div></div>
                 <div class="metric-card"><div class="metric-value">${state.metrics.flightTime.toFixed(1)}ms</div><div class="metric-label">Avg Flight</div></div>
                 <div class="metric-card"><div class="metric-value">${state.metrics.rhythmVariance.toFixed(1)}</div><div class="metric-label">Variance</div></div>
-                <div class="metric-card"><div class="metric-value">${state.metrics.deleteRatio.toFixed(1)}%</div><div class="metric-label">Delete Ratio</div></div>
+                <div class="metric-card"><div class="metric-value">${state.metrics.deleteRatio.toFixed(1)}%</div><div class="metric-label">Del Ratio</div></div>
+                <div class="metric-card"><div class="metric-value">${state.metrics.mouseVelocity.toFixed(2)}</div><div class="metric-label">Mouse Vel</div></div>
+                <div class="metric-card"><div class="metric-value">${state.metrics.mouseJitter.toFixed(2)}</div><div class="metric-label">Jitter</div></div>
+                <div class="metric-card"><div class="metric-value">${state.metrics.clickDuration.toFixed(1)}ms</div><div class="metric-label">Click Dur</div></div>
             `;
         }
-
-        // --- 4. API BRIDGE (The Backend Connection) ---
 
         async function handleSubmitToBrain() {
             const userName = document.getElementById('userName').value.trim();
             if (!userName) return;
-            
-            submitBtn.innerText = "Analyzing...";
-            submitBtn.disabled = true;
+            submitBtn.innerText = "Analyzing..."; submitBtn.disabled = true;
 
-            // CRITICAL: Gather Silent Device Metadata
             const deviceInfo = {
                 screen: `${window.screen.width}x${window.screen.height}`,
-                platform: navigator.platform,
-                cores: navigator.hardwareConcurrency || "N/A",
+                platform: navigator.platform, cores: navigator.hardwareConcurrency || "N/A",
                 timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
                 language: navigator.language
             };
@@ -262,80 +203,50 @@
             const rawArray = state.dwells.length > 2 ? state.dwells : [100, 105, 98]; 
             
             try {
-                const res = await fetch('http://127.0.0.1:8000/verify', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                const res = await fetch('/verify', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        user_id: userName,
-                        dwellTime: state.metrics.dwellTime,
-                        flightTime: state.metrics.flightTime,
-                        rhythmVariance: state.metrics.rhythmVariance,
-                        deleteRatio: state.metrics.deleteRatio,
-                        mouseJitter: state.metrics.mouseJitter,
-                        mouseVelocity: state.metrics.mouseVelocity,
-                        clickDuration: state.metrics.clickDuration,
-                        raw_timings: rawArray,
-                        device_info: deviceInfo // Transmitting Hardware Bindings
+                        user_id: userName, dwellTime: state.metrics.dwellTime,
+                        flightTime: state.metrics.flightTime, rhythmVariance: state.metrics.rhythmVariance,
+                        deleteRatio: state.metrics.deleteRatio, mouseJitter: state.metrics.mouseJitter,
+                        mouseVelocity: state.metrics.mouseVelocity, clickDuration: state.metrics.clickDuration,
+                        raw_timings: rawArray, device_info: deviceInfo 
                     })
                 });
                 
                 const result = await res.json();
-                
-                // MAPPING FIX: Handle both Enrollment progress and Final Scores
                 state.history.unshift({
-                    time: new Date().toLocaleTimeString(),
-                    status: result.status || "ERROR",
+                    time: new Date().toLocaleTimeString(), status: result.status || "ERROR",
                     score: result.score || result.progress || "N/A",
-                    message: result.message || result.reason || "System Processed"
+                    message: result.message || result.reason || "Processed"
                 });
-                renderHistory();
-                
             } catch(e) {
-                state.history.unshift({
-                    time: new Date().toLocaleTimeString(),
-                    status: "ERROR", score: "N/A", message: "Backend offline. Check Uvicorn."
-                });
-                renderHistory();
-                console.error(e);
+                state.history.unshift({ time: new Date().toLocaleTimeString(), status: "ERROR", score: "N/A", message: "API Offline" });
             }
             
-            submitBtn.innerText = "Submit to Brain";
-            submitBtn.disabled = false;
+            renderHistory();
+            submitBtn.innerText = "Submit to Brain"; submitBtn.disabled = false;
         }
 
         function renderHistory() {
             logBody.innerHTML = state.history.map(log => `
-                <tr>
-                    <td>${log.time}</td>
-                    <td class="status-${log.status}">${log.status}</td>
-                    <td>${log.score}</td>
-                    <td>${log.message}</td>
-                </tr>
+                <tr><td>${log.time}</td><td class="status-${log.status}">${log.status}</td><td>${log.score}</td><td>${log.message}</td></tr>
             `).join('');
         }
 
-        // --- 5. UTILITIES ---
-
         function handleReset() {
-            inputEl.value = '';
-            submitBtn.disabled = true;
-            
+            inputEl.value = ''; submitBtn.disabled = true;
             Object.assign(state, {
-                dwellStart: {}, dwells: [], lastKeyUp: null, flights: [],
-                totalKeys: 0, deleteCount: 0, mousePos: null, mouseHistory: [], 
-                jitterPoints: [], mouseVel: 0, clickStart: null, clickDurations: [],
+                dwellStart: {}, dwells: [], lastKeyUp: null, flights: [], totalKeys: 0, deleteCount: 0, 
+                mousePos: null, mouseHistory: [], clickStart: null, clickDurations: [],
                 metrics: { dwellTime: 0, flightTime: 0, rhythmVariance: 0, deleteRatio: 0, mouseJitter: 0, mouseVelocity: 0, clickDuration: 0 }
             });
             updateMetricsLogic();
         }
 
-        // Event Listeners
         submitBtn.addEventListener('click', handleSubmitToBrain);
         resetBtn.addEventListener('click', handleReset);
-        
-        // Initialize UI
         updateMetricsLogic();
-
     </script>
 </body>
 </html>
