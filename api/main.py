@@ -229,6 +229,86 @@ def calculate_similarity(baseline: dict, current: BehaviorData):
     avg_similarity = sum(dimension_scores) / len(dimension_scores)
     return avg_similarity * 100
 
+
+class CSVDatabase:
+    """
+    OpenBehavior-Auth Smart Storage Engine
+    Logic: Groups sessions into single files until 'max_log_rows' is reached.
+    Prevents file-system clutter in high-traffic environments.
+    """
+    def __init__(self):
+        self.logs_dir = "logs"
+        if not os.path.exists(self.logs_dir):
+            os.makedirs(self.logs_dir)
+            
+        self.headers = [
+            "Timestamp", "UserID", "Status", "Score", 
+            "DwellTime", "FlightTime", "Variance", "Jitter", "Velocity", "ClickDuration",
+            "ScreenRes", "Platform", "Cores", "Timezone", "Language"
+        ]
+
+    def _get_active_file(self):
+        """
+        Determines whether to append to the latest file or rotate to a new one.
+        Default: 200 rows per file.
+        """
+        max_rows = config.get("max_log_rows", 200)
+        
+        # Look for existing files: LOG_20260420_110000.csv, etc.
+        existing_logs = sorted([f for f in os.listdir(self.logs_dir) if f.startswith("LOG_")])
+        
+        if existing_logs:
+            latest_path = os.path.join(self.logs_dir, existing_logs[-1])
+            try:
+                with open(latest_path, 'r') as f:
+                    # Count total lines in the current file
+                    line_count = sum(1 for _ in f)
+                
+                # If we haven't hit the 200-row limit (+1 for header), keep using it
+                if line_count <= max_rows:
+                    return latest_path
+            except Exception:
+                pass # If file is locked or corrupt, move to create a new one
+
+        # If no file exists OR limit is reached, generate a new timestamped file
+        file_ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        new_path = os.path.join(self.logs_dir, f"LOG_{file_ts}.csv")
+        
+        # Initialize the new file with headers
+        with open(new_path, mode='w', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(self.headers)
+            
+        return new_path
+
+    def save(self, user_id: str, status: str, score: float, metrics: dict):
+        """Standardized save method used by the /verify endpoint."""
+        target_file = self._get_active_file()
+        
+        # Safely pull device info from the incoming Pydantic model
+        device = getattr(metrics, 'device_info', {})
+
+        with open(target_file, mode='a', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow([
+                datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                user_id,
+                status,
+                score,
+                metrics.dwellTime,
+                metrics.flightTime,
+                metrics.rhythmVariance,
+                metrics.mouseJitter,
+                metrics.mouseVelocity,
+                metrics.clickDuration,
+                device.get("screen", "N/A"),
+                device.get("platform", "N/A"),
+                device.get("cores", "N/A"),
+                device.get("timezone", "N/A"),
+                device.get("language", "N/A")
+            ])
+        print(f"[*] Audit log updated: {target_file}")
+
 # =====================================================================
 # SECTION 4: THE AUTHENTICATION GATEKEEPER
 # =====================================================================
