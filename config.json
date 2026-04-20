@@ -1,7 +1,8 @@
 {
-    "storage_mode": "local_csv", 
+"storage_mode": "local_csv", 
+    "max_log_rows": 200,
     "enrollment_sessions": 3,
-    "threshold": 75.0,
+    "threshold": 50.0,
     "starting_session_count": 0,
     "baseline": {
         "dwellTime": 85.0,
