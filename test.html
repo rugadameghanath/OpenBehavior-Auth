@@ -15,12 +15,13 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: var(--bg-color); color: var(--text-main);
             margin: 0; padding: 2rem; display: grid; grid-template-columns: 1fr 1fr;
-            gap: 2rem; max-width: 1400px; margin: auto;
+            gap: 2rem; max-width: 1400px; margin: auto; position: relative;
         }
 
         .panel {
             background-color: var(--panel-bg); border: 1px solid var(--border);
             border-radius: 8px; padding: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            z-index: 10; position: relative;
         }
 
         h2 { margin-top: 0; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
@@ -44,8 +45,8 @@
         button:hover:not(:disabled) { opacity: 0.9; }
         .btn-primary { background-color: var(--accent); color: white; }
         .btn-secondary { background-color: var(--border); color: white; }
+        .btn-danger { background-color: var(--danger); color: white; }
 
-        /* Updated to hold 7 metrics cleanly */
         .metrics-grid {
             display: grid; grid-template-columns: repeat(4, 1fr);
             gap: 1rem; margin-top: 1rem;
@@ -62,9 +63,49 @@
         .status-CERTIFIED { color: var(--success); font-weight: bold; }
         .status-ENROLLING { color: var(--warning); font-weight: bold; }
         .status-SUSPICIOUS, .status-REJECTED, .status-ERROR { color: var(--danger); font-weight: bold; }
+
+        /* Restored Mouse Tracking Overlay */
+        #overlayEl {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            pointer-events: none; z-index: 9999; overflow: hidden;
+        }
+        .mouse-dot {
+            position: absolute; width: 8px; height: 8px; background-color: var(--accent);
+            border-radius: 50%; opacity: 0.8; transition: opacity 0.5s ease-out;
+        }
+
+        /* Face Step-Up Modal */
+        .modal-backdrop {
+            display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0, 0, 0, 0.8); z-index: 10000; justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: var(--panel-bg); padding: 2rem; border-radius: 8px;
+            border: 1px solid var(--border); text-align: center; max-width: 400px;
+        }
+        #webcamStream {
+            width: 100%; border-radius: 8px; margin: 1rem 0; border: 2px solid var(--border);
+            background: #000;
+        }
     </style>
 </head>
 <body>
+    <div id="overlayEl"></div>
+
+    <div class="modal-backdrop" id="faceModal">
+        <div class="modal-content">
+            <h2 style="color: var(--warning);">Rhythm Anomaly Detected</h2>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">
+                Your typing pattern did not match our baseline. Please verify your identity via Face ID to continue.
+            </p>
+            <video id="webcamStream" autoplay playsinline></video>
+            <div class="btn-group" style="justify-content: center;">
+                <button id="cancelMfaBtn" class="btn-secondary">Cancel</button>
+                <button id="captureFaceBtn" class="btn-primary">Verify Face</button>
+            </div>
+        </div>
+    </div>
+
     <div class="panel">
         <h2>Biometric Capture Sandbox</h2>
         <div class="input-group">
@@ -108,7 +149,16 @@
         const resetBtn = document.getElementById('resetBtn');
         const metricsContainer = document.getElementById('metricsDisplay');
         const logBody = document.getElementById('logBody');
+        const overlayEl = document.getElementById('overlayEl');
 
+        // MFA Modal Elements
+        const faceModal = document.getElementById('faceModal');
+        const webcamStream = document.getElementById('webcamStream');
+        const captureFaceBtn = document.getElementById('captureFaceBtn');
+        const cancelMfaBtn = document.getElementById('cancelMfaBtn');
+        let activeStream = null;
+
+        // --- KEYBOARD CAPTURE ---
         inputEl.addEventListener('keydown', (e) => {
             if (!state.dwellStart[e.key]) state.dwellStart[e.key] = performance.now();
             if (e.key === 'Backspace' || e.key === 'Delete') state.deleteCount++;
@@ -131,8 +181,22 @@
             updateMetricsLogic();
         });
 
+        // --- RESTORED MOUSE TRACKING & VISUALS ---
         document.addEventListener('mousemove', (e) => {
             const now = performance.now();
+            
+            // Draw Visual Trail
+            const dot = document.createElement('div');
+            dot.className = 'mouse-dot';
+            dot.style.left = `${e.clientX - 4}px`;
+            dot.style.top = `${e.clientY - 4}px`;
+            overlayEl.appendChild(dot);
+            
+            // Clean up dots to prevent memory leaks
+            setTimeout(() => { dot.style.opacity = '0'; }, 100);
+            setTimeout(() => { if(overlayEl.contains(dot)) overlayEl.removeChild(dot); }, 600);
+
+            // Calculate metrics
             if (state.mousePos) {
                 const dx = e.clientX - state.mousePos.x;
                 const dy = e.clientY - state.mousePos.y;
@@ -152,6 +216,7 @@
             }
         });
 
+        // --- METRICS MATH ---
         function getAvg(arr) { return arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : 0; }
         function getVariance(arr, mean) { return arr.length > 1 ? arr.reduce((a,b)=>a + Math.pow(b - mean, 2), 0) / arr.length : 0; }
 
@@ -188,6 +253,35 @@
             `;
         }
 
+        // --- FACE STEP-UP LOGIC ---
+        async function triggerFaceStepUp() {
+            faceModal.style.display = 'flex';
+            try {
+                activeStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                webcamStream.srcObject = activeStream;
+            } catch (err) {
+                console.error("Camera denied or unavailable:", err);
+                webcamStream.style.border = "2px solid var(--danger)";
+            }
+        }
+
+        function closeFaceModal(success = false) {
+            faceModal.style.display = 'none';
+            if (activeStream) {
+                activeStream.getTracks().forEach(track => track.stop());
+                activeStream = null;
+            }
+            if (success) {
+                state.history[0].status = "CERTIFIED";
+                state.history[0].message = "MFA Cleared via Face ID";
+                renderHistory();
+            }
+        }
+
+        captureFaceBtn.addEventListener('click', () => closeFaceModal(true));
+        cancelMfaBtn.addEventListener('click', () => closeFaceModal(false));
+
+        // --- API INTEGRATION ---
         async function handleSubmitToBrain() {
             const userName = document.getElementById('userName').value.trim();
             if (!userName) return;
@@ -203,7 +297,7 @@
             const rawArray = state.dwells.length > 2 ? state.dwells : [100, 105, 98]; 
             
             try {
-                const res = await fetch('/verify', {
+                const res = await fetch('http://127.0.0.1:8000/verify', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         user_id: userName, dwellTime: state.metrics.dwellTime,
@@ -215,11 +309,18 @@
                 });
                 
                 const result = await res.json();
+                
                 state.history.unshift({
                     time: new Date().toLocaleTimeString(), status: result.status || "ERROR",
                     score: result.score || result.progress || "N/A",
                     message: result.message || result.reason || "Processed"
                 });
+
+                // Trigger Step-Up if Suspicious
+                if (result.status === "SUSPICIOUS") {
+                    triggerFaceStepUp();
+                }
+
             } catch(e) {
                 state.history.unshift({ time: new Date().toLocaleTimeString(), status: "ERROR", score: "N/A", message: "API Offline" });
             }
@@ -235,7 +336,7 @@
         }
 
         function handleReset() {
-            inputEl.value = ''; submitBtn.disabled = true;
+            inputEl.value = ''; submitBtn.disabled = true; overlayEl.innerHTML = '';
             Object.assign(state, {
                 dwellStart: {}, dwells: [], lastKeyUp: null, flights: [], totalKeys: 0, deleteCount: 0, 
                 mousePos: null, mouseHistory: [], clickStart: null, clickDurations: [],
