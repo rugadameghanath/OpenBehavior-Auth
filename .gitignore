@@ -206,13 +206,22 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
-# Ignore all session logs
+# --- Biometric Audit Data (PII) ---
+# Prevents private user logs and test data from leaking to GitHub
 logs/
 *.csv
 
-# Ignore local python environment data
+# --- Local Configuration ---
+# Uncomment the line below if you want to keep your personal thresholds private
+# config.json
+
+# --- Python Environment ---
+# Standard ignore list for Python development
 __pycache__/
 *.pyc
+.venv/
+.env
 
-# Ignore local configuration if you want to keep yours private
-# config.json
+# --- OS Generated Files ---
+.DS_Store
+Thumbs.db
