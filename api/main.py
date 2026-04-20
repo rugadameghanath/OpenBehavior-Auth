@@ -182,15 +182,18 @@ async def verify_user(data: BehaviorData):
         return {"status": "REJECTED", "reason": "Automated traffic detected"}
     
     # STEP B: Enrollment Phase Tracking
-    if db_user["session_count"] < 5:
+    # Pull the required session count from config, default to 5 if it's missing
+    ENROLLMENT_LIMIT = config.get("enrollment_sessions", 5)
+
+    if db_user["session_count"] < ENROLLMENT_LIMIT:
         db_user["session_count"] += 1
         
-        # Log the enrollment attempt to the configured database
+        # Log the enrollment attempt
         db.save(data.user_id, "ENROLLING", 0.0, data)
         
         return {
             "status": "ENROLLING", 
-            "progress": f"{db_user['session_count']}/5",
+            "progress": f"{db_user['session_count']}/{ENROLLMENT_LIMIT}",
             "message": "Learning behavioral patterns..."
         }
     
